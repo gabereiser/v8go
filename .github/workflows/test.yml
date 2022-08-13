@@ -12,11 +12,8 @@ jobs:
     name: Tests on ${{ matrix.go-version }} ${{ matrix.platform }}
     strategy:
       matrix:
-        go-version: [1.16.8, 1.17.1]
-        # We use macos-11 over macos-latest because macos-latest defaults to Catalina(10.15) and not Big Sur(11.0)
-        # We can switch to macos-latest whenever Big Sur becomes the default
-        # See https://github.com/actions/virtual-environments#available-environments
-        platform: [ubuntu-latest, macos-11]
+        go-version: [1.18.3, 1.19]
+        platform: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.platform }}
 
     steps:
@@ -38,13 +35,4 @@ jobs:
       with:
         files: ./c.out
         env_vars: OS,GO
-    - name: Add GOPATH to GITHUB_ENV
-      run: echo "GOPATH=$(go env GOPATH)" >>"$GITHUB_ENV"
-    - name: Scan and upload FOSSA data (Linux/Mac)
-      if: env.FOSSA_API_KEY != '' && github.ref == 'refs/heads/master'
-      run: |
-        curl -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/fossas/fossa-cli/master/install.sh | sudo bash
-        fossa analyze
-      env:
-        FOSSA_API_KEY: ${{ secrets.FOSSA_API_KEY }}
         
