@@ -62,7 +62,8 @@ class TracedReferenceBase {
    */
   V8_INLINE v8::Local<v8::Value> Get(v8::Isolate* isolate) const {
     if (IsEmpty()) return Local<Value>();
-    return Local<Value>::New(isolate, reinterpret_cast<Value*>(val_));
+    return Local<Value>::New(isolate,
+                             internal::ValueHelper::SlotAsValue<Value>(val_));
   }
 
   /**
@@ -103,10 +104,13 @@ class TracedReferenceBase {
 
   V8_EXPORT void CheckValue() const;
 
+  V8_INLINE internal::Address address() const { return *val_; }
+
   // val_ points to a GlobalHandles node.
   internal::Address* val_ = nullptr;
 
   friend class internal::BasicTracedReferenceExtractor;
+  friend class internal::HandleHelper;
   template <typename F>
   friend class Local;
   template <typename U>
@@ -135,7 +139,12 @@ class BasicTracedReference : public TracedReferenceBase {
   /**
    * Construct a Local<T> from this handle.
    */
-  Local<T> Get(Isolate* isolate) const { return Local<T>::New(isolate, *this); }
+  Local<T> Get(Isolate* isolate) const {
+#ifdef V8_ENABLE_CONSERVATIVE_STACK_SCANNING
+    if (val_ == nullptr) return Local<T>();
+#endif
+    return Local<T>::New(isolate, *this);
+  }
 
   template <class S>
   V8_INLINE BasicTracedReference<S>& As() const {
@@ -200,7 +209,7 @@ class TracedReference : public BasicTracedReference<T> {
    */
   template <class S>
   TracedReference(Isolate* isolate, Local<S> that) : BasicTracedReference<T>() {
-    this->val_ = this->New(isolate, that.val_, &this->val_,
+    this->val_ = this->New(isolate, *that, &this->val_,
                            internal::GlobalHandleStoreMode::kInitializingStore);
     static_assert(std::is_base_of<T, S>::value, "type check");
   }
@@ -284,7 +293,7 @@ template <class T>
 internal::Address* BasicTracedReference<T>::New(
     Isolate* isolate, T* that, void* slot,
     internal::GlobalHandleStoreMode store_mode) {
-  if (that == nullptr) return nullptr;
+  if (that == internal::ValueHelper::EmptyValue<T>()) return nullptr;
   internal::Address* p = reinterpret_cast<internal::Address*>(that);
   return internal::GlobalizeTracedReference(
       reinterpret_cast<internal::Isolate*>(isolate), p,
@@ -299,21 +308,13 @@ void TracedReferenceBase::Reset() {
 
 V8_INLINE bool operator==(const TracedReferenceBase& lhs,
                           const TracedReferenceBase& rhs) {
-  v8::internal::Address* a = reinterpret_cast<v8::internal::Address*>(lhs.val_);
-  v8::internal::Address* b = reinterpret_cast<v8::internal::Address*>(rhs.val_);
-  if (a == nullptr) return b == nullptr;
-  if (b == nullptr) return false;
-  return *a == *b;
+  return internal::HandleHelper::EqualHandles(lhs, rhs);
 }
 
 template <typename U>
 V8_INLINE bool operator==(const TracedReferenceBase& lhs,
                           const v8::Local<U>& rhs) {
-  v8::internal::Address* a = reinterpret_cast<v8::internal::Address*>(lhs.val_);
-  v8::internal::Address* b = reinterpret_cast<v8::internal::Address*>(*rhs);
-  if (a == nullptr) return b == nullptr;
-  if (b == nullptr) return false;
-  return *a == *b;
+  return internal::HandleHelper::EqualHandles(lhs, rhs);
 }
 
 template <typename U>
@@ -346,7 +347,7 @@ void TracedReference<T>::Reset(Isolate* isolate, const Local<S>& other) {
   this->Reset();
   if (other.IsEmpty()) return;
   this->SetSlotThreadSafe(
-      this->New(isolate, other.val_, &this->val_,
+      this->New(isolate, *other, &this->val_,
                 internal::GlobalHandleStoreMode::kAssigningStore));
 }
 
