@@ -179,16 +179,12 @@ class V8_EXPORT SnapshotCreator {
 
 template <class T>
 size_t SnapshotCreator::AddData(Local<Context> context, Local<T> object) {
-  T* object_ptr = *object;
-  internal::Address* p = reinterpret_cast<internal::Address*>(object_ptr);
-  return AddData(context, *p);
+  return AddData(context, internal::ValueHelper::ValueAsAddress(*object));
 }
 
 template <class T>
 size_t SnapshotCreator::AddData(Local<T> object) {
-  T* object_ptr = *object;
-  internal::Address* p = reinterpret_cast<internal::Address*>(object_ptr);
-  return AddData(*p);
+  return AddData(internal::ValueHelper::ValueAsAddress(*object));
 }
 
 }  // namespace v8
