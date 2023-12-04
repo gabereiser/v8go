@@ -23,7 +23,7 @@ import (
 )
 """
 
-CHROME_VERSIONS_URL = "https://omahaproxy.appspot.com/all.json?os=linux&channel=stable"
+CHROME_VERSIONS_URL = "https://chromiumdash.appspot.com/all.json?os=linux&channel=stable"
 V8_VERSION_FILE = "v8_version"
 
 deps_path = os.path.dirname(os.path.realpath(__file__))
