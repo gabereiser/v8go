@@ -25,7 +25,9 @@ jobs:
               run: echo "$PWD/deps/depot_tools" >> $GITHUB_PATH
               shell: bash
             - name: Run upgrade script
-              run: cd deps && python upgrade_v8.py
+              run: |
+                cd deps
+                python upgrade_v8.py || true
             - name: Create PR metadata
               id: pr_metadata
               run: |
