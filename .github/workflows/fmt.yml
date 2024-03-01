@@ -8,8 +8,14 @@ jobs:
         steps:
             - name: Checkout
               uses: actions/checkout@v2
+              env:
+                CGO_ENABLED: 1
             - run: go fmt
             - name: go generate (clang-format)
+              env:
+                CGO_ENABLED: 1
               run: go generate
             - name: Display missing format changes
+              env:
+                CGO_ENABLED: 1
               run: git diff --exit-code
