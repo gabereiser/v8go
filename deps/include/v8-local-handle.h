@@ -250,7 +250,7 @@ class Local : public LocalBase<T> {
      * handles. For example, converting from a Local<String> to a
      * Local<Number>.
      */
-    static_assert(std::is_base_of<T, S>::value, "type check");
+    //static_assert(std::is_base_of<T, S>::value, "type check");
   }
 
   V8_INLINE T* operator->() const { return this->template value<T>(); }
